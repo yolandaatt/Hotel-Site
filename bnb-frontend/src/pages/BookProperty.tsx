@@ -1,7 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { api } from "../api/api";
 import { notifyError } from "../utils/toast";
+import TailwindDateRange from "../components/DateRange";
 
 interface Property {
   id: string;
@@ -17,9 +18,30 @@ export default function BookProperty() {
   const navigate = useNavigate();
 
   const [property, setProperty] = useState<Property | null>(null);
-  const [checkIn, setCheckIn] = useState("");
-  const [checkOut, setCheckOut] = useState("");
+
+  const [checkIn, setCheckIn] = useState<Date | null>(() => new Date());
+  const [checkOut, setCheckOut] = useState<Date | null>(() => {
+    return new Date(Date.now() + 86400000);
+  });
+
+  const [showCalendar, setShowCalendar] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const calendarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        calendarRef.current &&
+        !calendarRef.current.contains(e.target as Node)
+      ) {
+        setShowCalendar(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const loadProperty = async () => {
@@ -44,21 +66,20 @@ export default function BookProperty() {
         return;
       }
 
-      if (new Date(checkOut) <= new Date(checkIn)) {
+      if (checkOut <= checkIn) {
         notifyError("Check-out måste vara efter check-in.");
         return;
       }
 
       await api.post("/bookings", {
         property_id: id,
-        check_in_date: checkIn,
-        check_out_date: checkOut,
+        check_in_date: checkIn.toISOString(),
+        check_out_date: checkOut.toISOString(),
       });
 
       navigate("/bookings");
-    } catch (err: unknown) {
+    } catch (err) {
       console.error("Booking error:", err);
-
       notifyError("Kunde inte skapa bokning.");
     } finally {
       setLoading(false);
@@ -66,19 +87,16 @@ export default function BookProperty() {
   }
 
   if (!property) {
-    return (
-      <p className="text-center mt-16 text-gray-500">
-        Laddar boende...
-      </p>
-    );
+    return <p className="text-center mt-16 text-gray-500">Laddar boende...</p>;
   }
 
   const firstImage = property.image_urls?.[0] ?? null;
 
+  const formatDate = (d: Date | null) =>
+    d ? d.toLocaleDateString("sv-SE") : "Välj datum";
+
   return (
     <div className="max-w-xl mx-auto mt-12 p-6 bg-white shadow-sm rounded-2xl border border-gray-100">
-
-      {/* Back button */}
       <button
         onClick={() => navigate(-1)}
         className="text-gray-500 hover:text-gray-700 mb-4 text-sm font-medium"
@@ -86,7 +104,6 @@ export default function BookProperty() {
         ← Tillbaka
       </button>
 
-      {/* Image */}
       {firstImage ? (
         <img
           src={firstImage}
@@ -99,7 +116,6 @@ export default function BookProperty() {
         </div>
       )}
 
-      {/* Property info */}
       <h1 className="text-3xl font-semibold text-gray-800 mb-2">
         {property.name}
       </h1>
@@ -110,38 +126,37 @@ export default function BookProperty() {
         {property.price_per_night} SEK / natt
       </p>
 
-      <p className="text-gray-700 leading-relaxed mb-6">
-        {property.description}
-      </p>
+      <p className="text-gray-700 leading-relaxed mb-6">{property.description}</p>
 
-      {/* Dates */}
-      <div className="space-y-4">
-        <div>
-          <label className="block text-gray-700 font-medium mb-1">
-            Check-in
-          </label>
-          <input
-            type="date"
-            value={checkIn}
-            onChange={(e) => setCheckIn(e.target.value)}
-            className="border rounded-lg p-2 w-full focus:ring-2 focus:ring-rose-300 outline-none"
-          />
-        </div>
+      {/* DATE PICKER */}
+      <div className="mb-4 relative" ref={calendarRef}>
+        <label className="block text-gray-700 font-medium mb-1">
+          Check In – Check Out
+        </label>
 
-        <div>
-          <label className="block text-gray-700 font-medium mb-1">
-            Check-out
-          </label>
-          <input
-            type="date"
-            value={checkOut}
-            onChange={(e) => setCheckOut(e.target.value)}
-            className="border rounded-lg p-2 w-full focus:ring-2 focus:ring-rose-300 outline-none"
-          />
-        </div>
+        <button
+          type="button"
+          onClick={() => setShowCalendar((v) => !v)}
+          className="w-full p-3 rounded-xl border border-gray-300 bg-white text-left"
+        >
+          {formatDate(checkIn)} – {formatDate(checkOut)}
+        </button>
+
+        {showCalendar && (
+          <div className="absolute left-0 mt-2 z-50">
+            <TailwindDateRange
+              startDate={checkIn}
+              endDate={checkOut}
+              onChange={(from, to) => {
+                setCheckIn(from);
+                setCheckOut(to);
+              }}
+              onComplete={() => setShowCalendar(false)}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Submit button */}
       <button
         onClick={handleBooking}
         disabled={loading}
@@ -164,4 +179,3 @@ export default function BookProperty() {
     </div>
   );
 }
-

@@ -1,41 +1,69 @@
 import { DayPicker, type DateRange } from "react-day-picker";
-import "react-day-picker/dist/style.css";
+import "../styles/datepicker.css";
+import { useRef } from "react";
 
 interface Props {
   startDate: Date | null;
   endDate: Date | null;
   onChange: (from: Date | null, to: Date | null) => void;
+  onComplete?: () => void;
 }
 
-export default function TailwindDateRange({ startDate, endDate, onChange }: Props) {
+export default function TailwindDateRange({
+  startDate,
+  endDate,
+  onChange,
+  onComplete,
+}: Props) {
+  const previousStart = useRef<Date | null>(startDate);
+
   const range: DateRange | undefined = {
     from: startDate ?? undefined,
     to: endDate ?? undefined,
   };
 
   const handleSelect = (value: DateRange | undefined) => {
-    onChange(value?.from ?? null, value?.to ?? null);
+    const newFrom = value?.from ?? null;
+    const newTo = value?.to ?? null;
+
+    onChange(newFrom, newTo);
+
+    // 👉 Stäng bara om:
+    // - vi hade ett startdatum innan, OCH
+    // - nu har vi både start och slutdatum, OCH
+    // - start ≠ slut
+    const selectingSecond =
+      previousStart.current &&
+      newFrom &&
+      newTo &&
+      newFrom.getTime() !== newTo.getTime();
+
+    if (selectingSecond && onComplete) {
+      setTimeout(() => onComplete(), 120);
+    }
+
+    previousStart.current = newFrom;
   };
 
   return (
-    <div className="p-4 bg-white border rounded-2xl shadow-md">
+    <div className="bg-white shadow-xl rounded-2xl p-4 border border-gray-200 relative">
+      <button
+        onClick={() => {
+          onChange(null, null);
+          previousStart.current = null;
+        }}
+        className="absolute right-3 top-3 text-xs text-gray-400 hover:text-rose-500 transition"
+      >
+        Rensa
+      </button>
+
       <DayPicker
         mode="range"
         selected={range}
         onSelect={handleSelect}
         showOutsideDays
-        classNames={{
-          months: "flex flex-col sm:flex-row gap-4",
-          month: "space-y-4",
-          caption: "text-center font-medium text-gray-700",
-          table: "w-full border-collapse",
-          head_cell: "py-1 text-gray-400 font-semibold",
-          cell: "p-1",
-          day: "h-10 w-10 flex items-center justify-center rounded-xl cursor-pointer transition",
-          day_selected: "bg-rose-500 text-white hover:bg-rose-600",
-          day_range_middle: "bg-rose-100 text-rose-600",
-          day_today: "border border-rose-400",
-        }}
+        numberOfMonths={1}
+        fixedWeeks
       />
     </div>
   );

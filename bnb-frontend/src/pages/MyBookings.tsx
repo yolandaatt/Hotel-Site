@@ -28,13 +28,24 @@ export default function MyBookings() {
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [loadingRequests, setLoadingRequests] = useState(true);
 
+  const ImageBox = ({ src }: { src?: string }) => (
+    <img
+      src={src || "https://via.placeholder.com/400x300?text=Ingen+bild"}
+      onError={(e) => {
+        (e.target as HTMLImageElement).src =
+          "https://via.placeholder.com/400x300?text=Ingen+bild";
+      }}
+      className="rounded-2xl w-full h-48 object-cover mb-4"
+      alt=""
+    />
+  );
+
   async function cancelBooking(id: string) {
     try {
       await api.delete(`/bookings/${id}`);
-
       setBookings((prev) => prev.filter((b) => b.id !== id));
       notifySuccess("Bokningen avbokades!");
-    } catch (err: unknown) {
+    } catch (err) {
       console.error("Failed to cancel booking:", err);
       notifyError("Kunde inte avboka bokningen.");
     }
@@ -45,7 +56,7 @@ export default function MyBookings() {
       try {
         const { data } = await api.get("/bookings");
         setBookings(data);
-      } catch (err: unknown) {
+      } catch (err) {
         console.error("Error fetching bookings:", err);
         notifyError("Kunde inte hämta bokningar.");
       } finally {
@@ -61,7 +72,7 @@ export default function MyBookings() {
       try {
         const { data } = await api.get("/bookings/requests");
         setRequests(data);
-      } catch (err: unknown) {
+      } catch (err) {
         console.error("Error fetching requests:", err);
         notifyError("Kunde inte hämta bokningsförfrågningar.");
       } finally {
@@ -84,7 +95,7 @@ export default function MyBookings() {
       );
 
       notifySuccess("Status uppdaterad!");
-    } catch (err: unknown) {
+    } catch (err) {
       console.error("Status update error:", err);
       notifyError("Kunde inte uppdatera status.");
     }
@@ -105,19 +116,6 @@ export default function MyBookings() {
     return <span className={color}>{status}</span>;
   };
 
-  const ImageBox = ({ src }: { src?: string }) =>
-    src ? (
-      <img
-        src={src}
-        className="rounded-2xl w-full h-48 object-cover mb-4"
-        alt=""
-      />
-    ) : (
-      <div className="bg-gray-200 rounded-2xl h-48 flex items-center justify-center text-gray-600">
-        Ingen bild
-      </div>
-    );
-
   return (
     <div className="max-w-6xl mx-auto mt-14 px-4 font-lato">
 
@@ -133,14 +131,14 @@ export default function MyBookings() {
       ) : (
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3 mb-20">
           {bookings.map((b) => {
-            const img = b.properties?.image_urls?.[0];
+            const image = b.properties?.image_urls?.[0];
 
             return (
               <div
                 key={b.id}
                 className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 flex flex-col"
               >
-                <ImageBox src={img} />
+                <ImageBox src={image} />
 
                 <h2 className="text-xl font-semibold text-gray-800">
                   {b.properties?.name}
@@ -216,7 +214,6 @@ export default function MyBookings() {
                     Status: <StatusTag status={r.status} />
                   </p>
 
-                  {/* Status change */}
                   <div className="mt-4">
                     <label className="block font-medium mb-1 text-gray-800">
                       Ändra status
@@ -253,5 +250,3 @@ export default function MyBookings() {
     </div>
   );
 }
-
-

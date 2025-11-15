@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import TailwindDateRange from "./DateRange";
@@ -17,11 +17,31 @@ export default function SearchBox() {
   const [children, setChildren] = useState(0);
 
   const [startDate, setStartDate] = useState<Date | null>(() => new Date());
-
   const [endDate, setEndDate] = useState<Date | null>(() => {
-  return new Date(Date.now() + 86400000);
+    return new Date(Date.now() + 86400000);
   });
 
+  const calendarRef = useRef<HTMLDivElement>(null);
+  const guestRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        calendarRef.current &&
+        !calendarRef.current.contains(e.target as Node)
+      ) {
+        setShowCalendar(false);
+      }
+
+      if (guestRef.current && !guestRef.current.contains(e.target as Node)) {
+        setShowGuests(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const formatDate = (date: Date | null) =>
     date ? format(date, "d MMM", { locale: sv }) : "Välj datum";
@@ -33,7 +53,8 @@ export default function SearchBox() {
     if (startDate) params.append("start", startDate.toISOString());
     if (endDate) params.append("end", endDate.toISOString());
 
-    params.append("guests", String(adults + children));
+    const guestsTotal = adults + children;
+    if (guestsTotal > 0) params.append("guests", String(guestsTotal));
 
     navigate(`/?${params.toString()}`);
   };
@@ -46,7 +67,7 @@ export default function SearchBox() {
 
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
 
-        {/* Destination */}
+        {/* Destinationsfältet */}
         <div className="mb-4">
           <label className="block text-gray-700 font-medium text-sm mb-1">
             Jag vill resa till
@@ -62,15 +83,18 @@ export default function SearchBox() {
           />
         </div>
 
-        {/* Datum */}
-        <div className="mb-4 relative">
+        {/* DATUM */}
+        <div className="mb-4 relative" ref={calendarRef}>
           <label className="block text-gray-700 font-medium text-sm mb-1">
             Datum
           </label>
 
           <button
             type="button"
-            onClick={() => setShowCalendar((v) => !v)}
+            onClick={() => {
+              setShowGuests(false);
+              setShowCalendar((v) => !v);
+            }}
             className="w-full p-3 rounded-xl border border-gray-300 bg-white text-left text-sm
                        focus:ring-2 focus:ring-rose-300 focus:border-rose-400"
           >
@@ -78,27 +102,43 @@ export default function SearchBox() {
           </button>
 
           {showCalendar && (
-            <div className="absolute mt-2 z-20">
-              <TailwindDateRange
-                startDate={startDate}
-                endDate={endDate}
-                onChange={(from, to) => {
-                  setStartDate(from);
-                  setEndDate(to);
-                }}
-              />
-            </div>
-          )}
+  <div
+    className="
+      absolute 
+      left-0 
+      mt-2 
+      z-50 
+      bg-white 
+      rounded-xl 
+      shadow-xl 
+      border
+    "
+  >
+    <TailwindDateRange
+      startDate={startDate}
+      endDate={endDate}
+      onChange={(from, to) => {
+        setStartDate(from);
+        setEndDate(to);
+      }}
+      onComplete={() => setShowCalendar(false)}
+    />
+  </div>
+)}
+
         </div>
 
-        {/* Guests */}
-        <div className="mb-4 relative">
+        {/* GÄSTER */}
+        <div className="mb-4 relative" ref={guestRef}>
           <label className="block text-gray-700 font-medium text-sm mb-1">
             Antal rum & gäster
           </label>
 
           <button
-            onClick={() => setShowGuests((v) => !v)}
+            onClick={() => {
+              setShowCalendar(false);
+              setShowGuests((v) => !v);
+            }}
             className="w-full p-3 rounded-xl border border-gray-300 bg-white text-left text-sm
                        focus:ring-2 focus:ring-rose-300 focus:border-rose-400"
           >
@@ -109,28 +149,25 @@ export default function SearchBox() {
           {showGuests && (
             <div className="absolute w-full bg-white border rounded-xl p-4 shadow-lg mt-2 z-20 text-sm">
 
-              {/* Rooms */}
               <GuestRow
                 label="Rum"
                 value={rooms}
-                onAdd={() => setRooms(rooms + 1)}
-                onRemove={() => rooms > 1 && setRooms(rooms - 1)}
+                onAdd={() => setRooms((v) => v + 1)}
+                onRemove={() => setRooms((v) => Math.max(1, v - 1))}
               />
 
-              {/* Adults */}
               <GuestRow
                 label="Vuxna"
                 value={adults}
-                onAdd={() => setAdults(adults + 1)}
-                onRemove={() => adults > 1 && setAdults(adults - 1)}
+                onAdd={() => setAdults((v) => v + 1)}
+                onRemove={() => setAdults((v) => Math.max(1, v - 1))}
               />
 
-              {/* Children */}
               <GuestRow
                 label="Barn"
                 value={children}
-                onAdd={() => setChildren(children + 1)}
-                onRemove={() => children > 0 && setChildren(children - 1)}
+                onAdd={() => setChildren((v) => v + 1)}
+                onRemove={() => setChildren((v) => Math.max(0, v - 1))}
               />
 
               <button
@@ -144,6 +181,7 @@ export default function SearchBox() {
           )}
         </div>
 
+        {/* SÖK KNAPP */}
         <button
           onClick={handleSearch}
           className="w-full bg-rose-400 py-3 text-white 
@@ -172,11 +210,17 @@ function GuestRow({
     <div className="flex justify-between items-center mb-3">
       <span>{label}</span>
       <div className="flex gap-3">
-        <button onClick={onRemove} className="px-2 py-1 bg-gray-200 rounded-lg">
+        <button
+          onClick={onRemove}
+          className="px-2 py-1 bg-gray-200 rounded-lg"
+        >
           -
         </button>
         <span>{value}</span>
-        <button onClick={onAdd} className="px-2 py-1 bg-gray-200 rounded-lg">
+        <button
+          onClick={onAdd}
+          className="px-2 py-1 bg-gray-200 rounded-lg"
+        >
           +
         </button>
       </div>

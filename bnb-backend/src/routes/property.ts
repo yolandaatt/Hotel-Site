@@ -14,7 +14,9 @@ const normalizeImages = (input: any): string[] => {
 propertyRoute.get("/", async (c) => {
   const destination = c.req.query("destination")?.toLowerCase() ?? "";
 
-  let query = supabase.from("properties").select("*");
+  let query = supabase
+    .from("properties")
+    .select("id, name, location, price_per_night, image_urls");
 
   if (destination) {
     query = query.or(
@@ -22,7 +24,7 @@ propertyRoute.get("/", async (c) => {
     );
   }
 
-  const { data } = await query;
+  const { data, error } = await query;
 
   return c.json(
     (data ?? []).map((p) => ({
@@ -32,12 +34,13 @@ propertyRoute.get("/", async (c) => {
   );
 });
 
+
 propertyRoute.get("/mine", requireAuth, async (c) => {
   const user = c.get("user");
 
   const { data } = await supabase
     .from("properties")
-    .select("*")
+    .select("id, name, location, price_per_night, image_urls")
     .eq("user_id", user.id);
 
   return c.json(
@@ -47,6 +50,7 @@ propertyRoute.get("/mine", requireAuth, async (c) => {
     }))
   );
 });
+
 
 propertyRoute.post("/", requireAuth, async (c) => {
   const user = c.get("user");

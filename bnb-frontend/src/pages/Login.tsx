@@ -1,39 +1,43 @@
 import { useState } from "react";
 import { useAuth } from "../context/authContext";
 import { notifyError, notifySuccess } from "../utils/toast";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  try {
-    setLoading(true);
-    await login(email, password);
+    try {
+      setLoading(true);
+      await login(email, password);
 
-    notifySuccess("Välkommen tillbaka!");
-  } catch (err: unknown) {
-    console.error(err);
+      notifySuccess("Välkommen tillbaka!");
 
-    if (typeof err === "object" && err !== null && "response" in err) {
-      const resp = (err as { response?: { status?: number } }).response;
+      navigate("/me");
+    } catch (err: unknown) {
+      console.error(err);
 
-      if (resp?.status === 401) {
-        notifyError("Fel uppgifter, försök igen.");
-        return;
+      if (typeof err === "object" && err !== null && "response" in err) {
+        const resp = (err as { response?: { status?: number } }).response;
+
+        if (resp?.status === 401) {
+          notifyError("Fel uppgifter, försök igen.");
+          return;
+        }
       }
-    }
 
-    notifyError("Ett oväntat fel uppstod.");
-  } finally {
-    setLoading(false);
-  }
-};
+      notifyError("Ett oväntat fel uppstod.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-sm mx-auto mt-16 bg-white p-8 rounded-2xl shadow-sm border border-gray-100">

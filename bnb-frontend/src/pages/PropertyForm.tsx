@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/api";
 import { notifyError, notifySuccess } from "../utils/toast";
+import { uploadImage } from "../utils/upload";
 
-export default function PropertyNew() {
+export default function PropertyForm() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -24,15 +25,6 @@ export default function PropertyNew() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -41,24 +33,21 @@ export default function PropertyNew() {
     if (!form.price_per_night || Number(form.price_per_night) <= 0)
       return notifyError("Pris måste vara ett positivt tal.");
 
+    if (imageFiles.length === 0 && imageUrls.length === 0)
+      return notifyError("Du måste ladda upp minst en bild.");
+
     setUploading(true);
 
     try {
-      const allImages: string[] = [];
+      const finalUrls: string[] = [];
 
       for (const file of imageFiles) {
-        const b64 = await fileToBase64(file);
-        if (b64 && typeof b64 === "string") allImages.push(b64);
+        const publicUrl = await uploadImage(file);
+        finalUrls.push(publicUrl);
       }
 
       for (const url of imageUrls) {
-        if (url.trim() !== "") allImages.push(url.trim());
-      }
-
-      if (allImages.length === 0) {
-        notifyError("Du måste ladda upp minst en bild.");
-        setUploading(false);
-        return;
+        if (url.trim() !== "") finalUrls.push(url.trim());
       }
 
       const payload = {
@@ -66,7 +55,7 @@ export default function PropertyNew() {
         description: form.description.trim(),
         location: form.location.trim(),
         price_per_night: Number(form.price_per_night),
-        image_urls: allImages,
+        image_urls: finalUrls, 
       };
 
       await api.post("/properties", payload);
@@ -136,7 +125,7 @@ export default function PropertyNew() {
           focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition"
         />
 
-        {/* Filuppladdning */}
+        {/* Filupload */}
         <input
           type="file"
           accept="image/*"
@@ -148,7 +137,7 @@ export default function PropertyNew() {
           className="w-full text-gray-700"
         />
 
-        {/* URL-bild */}
+        {/* URL-input */}
         <div className="flex gap-2 mt-3">
           <input
             id="urlAdd"
@@ -173,11 +162,9 @@ export default function PropertyNew() {
           </button>
         </div>
 
-        {/* Förhandsvisning */}
+        {/* Preview */}
         {(imageFiles.length > 0 || imageUrls.length > 0) && (
           <div className="grid grid-cols-3 gap-3 mt-4">
-
-            {/* Filbilder */}
             {imageFiles.map((file, i) => (
               <div key={i} className="relative">
                 <img
@@ -187,19 +174,15 @@ export default function PropertyNew() {
                 <button
                   type="button"
                   onClick={() =>
-                    setImageFiles((prev) =>
-                      prev.filter((_, index) => index !== i)
-                    )
+                    setImageFiles((prev) => prev.filter((_, idx) => idx !== i))
                   }
-                  className="absolute top-1 right-1 bg-white/80 hover:bg-white
-                  text-gray-700 px-2 py-1 rounded-full shadow text-xs"
+                  className="absolute top-1 right-1 bg-white/80 hover:bg-white text-gray-700 px-2 py-1 rounded-full shadow text-xs"
                 >
                   ✕
                 </button>
               </div>
             ))}
 
-            {/* URL-bilder */}
             {imageUrls.map((url, i) => (
               <div key={i} className="relative">
                 <img
@@ -209,12 +192,9 @@ export default function PropertyNew() {
                 <button
                   type="button"
                   onClick={() =>
-                    setImageUrls((prev) =>
-                      prev.filter((_, index) => index !== i)
-                    )
+                    setImageUrls((prev) => prev.filter((_, idx) => idx !== i))
                   }
-                  className="absolute top-1 right-1 bg-white/80 hover:bg-white
-                  text-gray-700 px-2 py-1 rounded-full shadow text-xs"
+                  className="absolute top-1 right-1 bg-white/80 hover:bg-white text-gray-700 px-2 py-1 rounded-full shadow text-xs"
                 >
                   ✕
                 </button>
@@ -239,4 +219,3 @@ export default function PropertyNew() {
     </div>
   );
 }
-

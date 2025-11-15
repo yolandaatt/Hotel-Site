@@ -20,6 +20,7 @@ export default function PropertyDetails() {
 
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
+
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -50,7 +51,6 @@ export default function PropertyDetails() {
 
   const images = property.image_urls ?? [];
   const hasImages = images.length > 0;
-  const currentImage = hasImages ? images[currentIndex] : null;
 
   const nextImage = () => {
     setCurrentIndex((i) => (i + 1) % images.length);
@@ -60,9 +60,11 @@ export default function PropertyDetails() {
     setCurrentIndex((i) => (i - 1 + images.length) % images.length);
   };
 
+  const currentImage = hasImages ? images[currentIndex] : null;
+
   return (
     <div className="max-w-3xl mx-auto mt-10 px-4 font-lato">
-      {/* Back button */}
+      {/* Tillbaka-knapp */}
       <button
         onClick={() => navigate(-1)}
         className="text-rose-500 hover:underline mb-6 block"
@@ -72,16 +74,16 @@ export default function PropertyDetails() {
 
       {/* Card */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        {/* Image / Carousel */}
-        {hasImages ? (
+        
+        {/* Bild / Carousel */}
+        {currentImage ? (
           <div className="relative w-full h-64">
             <img
-              src={currentImage!}
+              src={currentImage}
               alt={property.name}
               className="w-full h-full object-cover"
             />
 
-            {/* Carousel arrows */}
             {images.length > 1 && (
               <>
                 <button
@@ -106,7 +108,7 @@ export default function PropertyDetails() {
           </div>
         )}
 
-        {/* Content */}
+        {/* Innehåll */}
         <div className="p-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-1">
             {property.name}
@@ -122,7 +124,7 @@ export default function PropertyDetails() {
             {property.description}
           </p>
 
-          {/* Book button */}
+          {/* Boka-knapp */}
           <button
             onClick={() => navigate(`/book/${property.id}`)}
             className="
@@ -137,4 +139,3 @@ export default function PropertyDetails() {
     </div>
   );
 }
-

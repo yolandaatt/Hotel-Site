@@ -20,6 +20,27 @@ export default function Home() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  function getValidImage(imgs?: string[]): string {
+    if (!imgs || imgs.length === 0) {
+      return "https://via.placeholder.com/600x400?text=Ingen+bild";
+    }
+
+    for (const img of imgs) {
+      if (!img) continue;
+
+      if (img.startsWith("data:image")) return img;
+
+      try {
+        const u = new URL(img);
+        if (u.protocol === "http:" || u.protocol === "https:") return img;
+      } catch {
+        continue;
+      }
+    }
+
+    return "https://via.placeholder.com/600x400?text=Ingen+bild";
+  }
+
   useEffect(() => {
     const fetchProperties = async () => {
       try {
@@ -29,7 +50,7 @@ export default function Home() {
         const { data } = await api.get(`/properties?${params.toString()}`);
 
         setFiltered(data);
-      } catch (err: unknown) {
+      } catch (err) {
         console.error("Error loading properties:", err);
         notifyError("Kunde inte ladda boenden.");
       } finally {
@@ -73,9 +94,7 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {filtered.map((p) => {
-              const img =
-                p.image_urls?.[0] ??
-                "https://via.placeholder.com/600x400?text=Ingen+bild";
+              const img = getValidImage(p.image_urls);
 
               return (
                 <div
@@ -97,6 +116,10 @@ export default function Home() {
                   {/* Image */}
                   <img
                     src={img}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        "https://via.placeholder.com/600x400?text=Ingen+bild";
+                    }}
                     alt={p.name}
                     className="w-full h-52 object-cover"
                   />
@@ -112,7 +135,6 @@ export default function Home() {
                       {p.price_per_night} SEK / natt
                     </p>
 
-                    {/* Details Button */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -142,4 +164,3 @@ export default function Home() {
     </div>
   );
 }
-

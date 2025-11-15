@@ -21,6 +21,25 @@ export default function Profile() {
   const [loadingProperties, setLoadingProperties] = useState(true);
   const navigate = useNavigate();
 
+  function getValidImage(imgs?: string[]): string | undefined {
+    if (!imgs || imgs.length === 0) return undefined;
+
+    for (const img of imgs) {
+      if (!img) continue;
+
+      if (img.startsWith("data:image")) return img;
+
+      try {
+        const u = new URL(img);
+        if (u.protocol === "http:" || u.protocol === "https:") return img;
+      } catch {
+        continue;
+      }
+    }
+
+    return undefined;
+  }
+
   const handleDelete = async (id: string) => {
     if (!confirm("Är du säker på att du vill ta bort annonsen?")) return;
 
@@ -62,7 +81,7 @@ export default function Profile() {
   const bio = user.profile?.bio || "Ingen bio ännu";
 
   return (
-    <div className="max-w-3xl mx-auto mt-10 px-4">
+    <div className="max-w-3xl mx-auto mt-10 px-4 font-lato">
       <h1 className="text-3xl font-semibold text-gray-800 mb-6">
         Välkommen, {displayName}
       </h1>
@@ -107,7 +126,7 @@ export default function Profile() {
       ) : (
         <div className="grid gap-4">
           {properties.map((p) => {
-            const firstImage = p.image_urls?.[0] || null;
+            const img = getValidImage(p.image_urls);
 
             return (
               <div
@@ -115,11 +134,15 @@ export default function Profile() {
                 className="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 flex items-center justify-between hover:shadow-md transition"
               >
                 <div className="flex items-center gap-4">
-                  {firstImage ? (
+                  {img ? (
                     <img
-                      src={firstImage}
+                      src={img}
                       alt={p.name}
                       className="w-20 h-20 object-cover rounded-xl"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          "https://via.placeholder.com/200x200?text=Ingen+bild";
+                      }}
                     />
                   ) : (
                     <div className="w-20 h-20 bg-gray-200 flex items-center justify-center text-gray-500 rounded-xl">
@@ -161,4 +184,3 @@ export default function Profile() {
     </div>
   );
 }
-

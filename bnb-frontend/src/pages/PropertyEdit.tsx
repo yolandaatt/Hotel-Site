@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/api";
 import { useNavigate, useParams } from "react-router-dom";
 import { notifyError, notifySuccess } from "../utils/toast";
+import { uploadImage } from "../utils/upload";
 
 interface Property {
   id: string;
@@ -36,42 +37,25 @@ export default function PropertyEdit() {
     })();
   }, [id]);
 
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!property) return;
 
     try {
-      if (!property.name.trim()) {
-        notifyError("Du måste ange en titel.");
-        return;
-      }
-      if (!property.location.trim()) {
-        notifyError("Du måste ange en plats.");
-        return;
-      }
-      if (property.price_per_night <= 0) {
-        notifyError("Pris måste vara ett positivt tal.");
-        return;
-      }
+      if (!property.name.trim()) return notifyError("Du måste ange en titel.");
+      if (!property.location.trim()) return notifyError("Du måste ange en plats.");
+      if (property.price_per_night <= 0)
+        return notifyError("Pris måste vara ett positivt tal.");
 
       const updatedImages = [...property.image_urls];
 
-      for (const f of newFiles) {
-        const b64 = await fileToBase64(f);
-        updatedImages.push(b64);
+      for (const file of newFiles) {
+        const publicUrl = await uploadImage(file);
+        updatedImages.push(publicUrl);
       }
 
-      for (const u of newUrls) {
-        if (u.trim() !== "") updatedImages.push(u.trim());
+      for (const url of newUrls) {
+        if (url.trim()) updatedImages.push(url.trim());
       }
 
       await api.put(`/properties/${id}`, {
@@ -115,11 +99,9 @@ export default function PropertyEdit() {
           type="text"
           value={property.name}
           onChange={(e) => setProperty({ ...property, name: e.target.value })}
-          className="
-            w-full p-3 rounded-xl border border-gray-300 
-            focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition
-          "
           placeholder="Titel på boendet"
+          className="w-full p-3 rounded-xl border border-gray-300 
+            focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition"
         />
 
         {/* Plats */}
@@ -129,11 +111,9 @@ export default function PropertyEdit() {
           onChange={(e) =>
             setProperty({ ...property, location: e.target.value })
           }
-          className="
-            w-full p-3 rounded-xl border border-gray-300 
-            focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition
-          "
           placeholder="Plats (t.ex. Stockholm)"
+          className="w-full p-3 rounded-xl border border-gray-300 
+            focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition"
         />
 
         {/* Pris */}
@@ -146,11 +126,9 @@ export default function PropertyEdit() {
               price_per_night: Number(e.target.value),
             })
           }
-          className="
-            w-full p-3 rounded-xl border border-gray-300 
-            focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition
-          "
           placeholder="Pris per natt (SEK)"
+          className="w-full p-3 rounded-xl border border-gray-300 
+            focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition"
         />
 
         {/* Beskrivning */}
@@ -159,12 +137,10 @@ export default function PropertyEdit() {
           onChange={(e) =>
             setProperty({ ...property, description: e.target.value })
           }
-          className="
-            w-full p-3 rounded-xl border border-gray-300 
-            focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition
-          "
           placeholder="Beskrivning av boendet"
           rows={4}
+          className="w-full p-3 rounded-xl border border-gray-300 
+            focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition"
         />
 
         {/* Nuvarande bilder */}
@@ -179,7 +155,6 @@ export default function PropertyEdit() {
                   className="w-full h-24 object-cover rounded-xl border"
                 />
 
-                {/* Ta bort bild */}
                 <button
                   type="button"
                   onClick={() =>
@@ -190,10 +165,8 @@ export default function PropertyEdit() {
                       ),
                     })
                   }
-                  className="
-                    absolute top-1 right-1 bg-white/80 hover:bg-white
-                    text-gray-800 px-2 py-1 rounded-full shadow text-xs
-                  "
+                  className="absolute top-1 right-1 bg-white/80 hover:bg-white
+                    text-gray-800 px-2 py-1 rounded-full shadow text-xs"
                 >
                   ✕
                 </button>
@@ -217,31 +190,17 @@ export default function PropertyEdit() {
           />
         </div>
 
-        {/* Nya URL:er */}
+        {/* Nya URLs */}
         <div className="flex gap-2 mt-3">
           <input
             id="urlAdd"
             type="text"
             placeholder="Klistra in bild-URL"
             className="flex-1 p-2 border rounded-xl text-gray-700"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                const val = (e.target as HTMLInputElement).value.trim();
-                if (val) {
-                  setNewUrls((prev) => [...prev, val]);
-                  (e.target as HTMLInputElement).value = "";
-                }
-              }
-            }}
           />
-
           <button
             type="button"
-            className="
-              px-4 bg-rose-400 hover:bg-rose-500 
-              text-white rounded-xl transition
-            "
+            className="px-4 bg-rose-400 hover:bg-rose-500 text-white rounded-xl transition"
             onClick={() => {
               const input = document.querySelector<HTMLInputElement>("#urlAdd");
               if (!input) return;
@@ -256,7 +215,7 @@ export default function PropertyEdit() {
           </button>
         </div>
 
-        {/* Förhandsvisning av nya */}
+        {/* Förhandsvisning */}
         {(newFiles.length > 0 || newUrls.length > 0) && (
           <div className="grid grid-cols-3 gap-3 mt-4">
             {newFiles.map((file, i) => (
@@ -268,14 +227,10 @@ export default function PropertyEdit() {
                 <button
                   type="button"
                   onClick={() =>
-                    setNewFiles((prev) =>
-                      prev.filter((_, index) => index !== i)
-                    )
+                    setNewFiles((prev) => prev.filter((_, idx) => idx !== i))
                   }
-                  className="
-                    absolute top-1 right-1 bg-white/80 hover:bg-white
-                    text-gray-700 px-2 py-1 rounded-full shadow text-xs
-                  "
+                  className="absolute top-1 right-1 bg-white/80 hover:bg-white
+                    text-gray-700 px-2 py-1 rounded-full shadow text-xs"
                 >
                   ✕
                 </button>
@@ -291,14 +246,10 @@ export default function PropertyEdit() {
                 <button
                   type="button"
                   onClick={() =>
-                    setNewUrls((prev) =>
-                      prev.filter((_, index) => index !== i)
-                    )
+                    setNewUrls((prev) => prev.filter((_, idx) => idx !== i))
                   }
-                  className="
-                    absolute top-1 right-1 bg-white/80 hover:bg-white
-                    text-gray-700 px-2 py-1 rounded-full shadow text-xs
-                  "
+                  className="absolute top-1 right-1 bg-white/80 hover:bg-white
+                    text-gray-700 px-2 py-1 rounded-full shadow text-xs"
                 >
                   ✕
                 </button>
@@ -307,13 +258,10 @@ export default function PropertyEdit() {
           </div>
         )}
 
-        {/* Spara */}
         <button
           type="submit"
-          className="
-            w-full py-3 rounded-full bg-rose-400 
-            text-white font-medium hover:bg-rose-500 transition
-          "
+          className="w-full py-3 rounded-full bg-rose-400 
+            text-white font-medium hover:bg-rose-500 transition"
         >
           Uppdatera annons
         </button>
