@@ -1,0 +1,30 @@
+# --- Node ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Environment ---
+.env
+.env.local
+.env.*.local
+
+# --- Vite ---
+dist/
+.cache/
+.vite/
+vite.config.timestamp*
+vite.svg
+
+# --- Logs ---
+logs/
+*.log
+*.log.*
+debug.log
+
+# --- OS / Editor ---
+.DS_Store
+Thumbs.db
+
+# --- Misc ---
+*.tsbuildinfo
