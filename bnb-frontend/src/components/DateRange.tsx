@@ -27,11 +27,6 @@ export default function TailwindDateRange({
     const newTo = value?.to ?? null;
 
     onChange(newFrom, newTo);
-
-    // 👉 Stäng bara om:
-    // - vi hade ett startdatum innan, OCH
-    // - nu har vi både start och slutdatum, OCH
-    // - start ≠ slut
     const selectingSecond =
       previousStart.current &&
       newFrom &&

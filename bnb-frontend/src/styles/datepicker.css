@@ -1,7 +1,7 @@
 /* Grundinställningar för react-day-picker */
 .rdp {
   --rdp-cell-size: 40px;
-  --rdp-accent-color: #fb7185;       /* huvudfärg (rosa) */
+  --rdp-accent-color: #fb7185;  
   --rdp-background-color: #ffffff;
   --rdp-outline: none;
 
@@ -9,13 +9,11 @@
   padding: 0;
 }
 
-/* En månad i taget, snygg grid */
 .rdp-months {
   display: grid !important;
   grid-template-columns: 1fr !important;
 }
 
-/* Rubriken över månaden */
 .rdp-caption {
   display: flex !important;
   justify-content: center !important;
@@ -24,7 +22,6 @@
   margin-bottom: 0.5rem;
 }
 
-/* Navigationspilar */
 .rdp-nav_button {
   color: #374151;
 }
@@ -32,7 +29,6 @@
   color: #fb7185;
 }
 
-/* Veckodagar */
 .rdp-head_cell {
   color: #6b7280;
   font-size: 0.8rem;
@@ -40,7 +36,6 @@
   padding-bottom: 0.4rem;
 }
 
-/* Enskild dag */
 .rdp-day {
   width: 40px;
   height: 40px;
@@ -50,25 +45,20 @@
   margin: 0 auto;
 }
 
-/* Hover (bara om inte redan vald / mellan) */
 .rdp-day:hover:not(.rdp-day_selected):not(.rdp-day_range_middle) {
   background-color: #ffe4e6;
 }
 
-/* ALLT som är valt får rosa bakgrund */
 .rdp-day[aria-selected="true"] {
   background-color: #fb7185 !important;
   color: #ffffff !important;
 }
 
-/* Mitten av ett spann (mellan start och slut) */
 .rdp-day_range_middle {
   background-color: #ffe4e6 !important;
   color: #fb7185 !important;
 }
 
-/* Start & slut får också samma rosa som selected,
-   men behåller klasserna ifall libben använder dem */
 .rdp-day_range_start,
 .rdp-day_range_end,
 .rdp-day_selected {
@@ -76,7 +66,6 @@
   color: #ffffff !important;
 }
 
-/* Dagens datum markeras med rosa kant */
 .rdp-day_today {
   border: 1px solid #fb7185;
 }
